@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eigene Tickets</title>
+
+<style>
+body{
+font-family:Arial;
+background:#f4f6f9;
+margin:0;
+padding:0;
+}
+
+header{
+background:#007bff;
+color:white;
+padding:20px;
+text-align:center;
+font-size:22px;
+}
+
+.container{
+max-width:800px;
+margin:auto;
+margin-top:40px;
+}
+
+.card{
+background:white;
+padding:25px;
+border-radius:10px;
+box-shadow:0 2px 10px rgba(0,0,0,0.1);
+margin-bottom:20px;
+}
+
+input{
+width:100%;
+padding:10px;
+margin-top:10px;
+margin-bottom:15px;
+border-radius:6px;
+border:1px solid #ccc;
+box-sizing:border-box;
+}
+
+button{
+background:#007bff;
+color:white;
+border:none;
+padding:12px;
+border-radius:6px;
+cursor:pointer;
+}
+
+.ticket{
+border:1px solid #ddd;
+padding:15px;
+margin-top:15px;
+border-radius:6px;
+background:#fafafa;
+}
+
+.status-open{
+color:red;
+font-weight:bold;
+}
+
+.status-progress{
+color:orange;
+font-weight:bold;
+}
+
+.status-closed{
+color:green;
+font-weight:bold;
+}
+
+.priority-low{
+color:green;
+font-weight:bold;
+}
+
+.priority-medium{
+color:#c9a000;
+font-weight:bold;
+}
+
+.priority-high{
+color:red;
+font-weight:bold;
+}
+
+.back{
+margin-top:20px;
+text-align:center;
+}
+
+.back a{
+color:#007bff;
+text-decoration:none;
+font-weight:bold;
+}
+
+img{
+max-width:300px;
+margin-top:10px;
+border-radius:6px;
+}
+
+.info{
+margin-top:15px;
+padding:10px;
+border-radius:6px;
+background:#eef3f8;
+}
+
+.error{
+margin-top:15px;
+padding:10px;
+border-radius:6px;
+background:#f8d7da;
+color:#721c24;
+}
+</style>
+
+</head>
+
+<body>
+
+<header>
+IT Support Ticket System
+</header>
+
+<div class="container">
+<div class="card">
+
+<h2>Eigene Tickets anzeigen</h2>
+
+<p>
+Bitte geben Sie Ihren <b>Benutzernamen</b> ein.<br>
+Die Tickets werden anhand dieses Namens gesucht.
+</p>
+
+<label>Benutzer</label>
+<input id="name" placeholder="z.B. Max Mustermann">
+
+<button onclick="loadTickets()">Tickets anzeigen</button>
+
+<div id="message"></div>
+<div id="ticketList"></div>
+
+<div class="back">
+<br>
+<a href="index.html">← Zurück zur Startseite</a>
+</div>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+const SUPABASE_URL = "https://epszdsxexzxpgsrexxqy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_sB6ZPrGeVXk7zSbc3vRdBg_WxmZkNEU";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadTickets(){
+
+const name = document.getElementById("name").value.trim();
+const ticketList = document.getElementById("ticketList");
+const message = document.getElementById("message");
+
+ticketList.innerHTML="";
+message.innerHTML="";
+
+if(!name){
+message.innerHTML='<div class="error">Bitte geben Sie einen Benutzernamen ein.</div>';
+return;
+}
+
+const { data, error } = await supabaseClient
+.from("tickets")
+.select("*")
+.eq("participant", name)
+.order("created", { ascending:false });
+
+if(error){
+message.innerHTML='<div class="error">Fehler beim Laden: '+error.message+'</div>';
+return;
+}
+
+if(!data || data.length===0){
+message.innerHTML='<div class="info">Keine Tickets gefunden.</div>';
+return;
+}
+
+let html="";
+
+data.forEach(t=>{
+
+let statusText="";
+let statusClass="";
+
+if(t.status==="open"){
+statusText="Offen";
+statusClass="status-open";
+}
+
+if(t.status==="in_progress"){
+statusText="In Bearbeitung";
+statusClass="status-progress";
+}
+
+if(t.status==="closed"){
+statusText="Erledigt";
+statusClass="status-closed";
+}
+
+let priorityText="-";
+let priorityClass="";
+
+if(t.priority==="low"){
+priorityText="Niedrig";
+priorityClass="priority-low";
+}
+
+if(t.priority==="medium"){
+priorityText="Mittel";
+priorityClass="priority-medium";
+}
+
+if(t.priority==="high"){
+priorityText="Dringend";
+priorityClass="priority-high";
+}
+
+html+=`
+<div class="ticket">
+
+<b>Ticketnummer:</b> ${t.number || "-"}<br>
+<b>Benutzer:</b> ${t.participant || "-"}<br>
+<b>Kunde:</b> ${t.customer || "-"}<br>
+<b>Anliegen:</b> ${t.subject || "-"}<br>
+<b>Details:</b> ${t.description || "-"}<br>
+
+<b>Priorität:</b> 
+<span class="${priorityClass}">
+${priorityText}
+</span>
+<br>
+
+<b>Status:</b> 
+<span class="${statusClass}">
+${statusText}
+</span>
+
+${t.screenshot ? `
+<br><br>
+<b>Screenshot:</b><br>
+<img src="${t.screenshot}">
+` : ""}
+
+</div>
+`;
+});
+
+ticketList.innerHTML=html;
+}
+
+</script>
+
+<footer style="text-align:center;margin-top:40px;color:#777;font-size:12px">
+© 2026 Luciana Bezerra – IT Support Ticket System. Alle Rechte vorbehalten.
+</footer>
+
+</body>
+</html>
