@@ -27,7 +27,7 @@ const dbConfig = {
   server: "VSRV-SQL\\SQLEXPRESS",
   database: "TicketDB",
   user: "sa",              // später ggf. ändern
-  password: process.env.DB_PASSWORD
+  password: process.env.DB_PASSWORD,
   options: {
     encrypt: false,
     trustServerCertificate: true
